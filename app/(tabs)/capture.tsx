@@ -1,7 +1,7 @@
 
 import SampleScreen from "@/screens/Sample/SampleScreen";
 
-export default function ExploreScreen() {
+export default function CaptureScreen() {
   return (
     <SampleScreen />
   );
