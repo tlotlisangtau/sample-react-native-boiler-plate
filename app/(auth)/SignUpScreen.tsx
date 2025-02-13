@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from "react-native-toast-message";
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/Colors';
+import * as bcrypt from 'react-native-bcrypt';
 
 const { width } = Dimensions.get('window');
 
@@ -21,57 +22,55 @@ const SignUpScreen = () => {
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
-      alert('Passwords do not match!');
-      return;
-    }
-    console.log('Sign Up pressed', { name, email, password });
-    
-    // Use await inside an async function
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    
-    if (authError) {
-      Toast.show({
-        type: "error", // "success", "error", "info"
-        text1: authError.message,
-      });
-      return;
-    }
-    
-    // Optionally, insert additional user data into your database
-    if (!data.user) {
-      Toast.show({
-        type: "error", // "success", "error", "info"
-        text1: "User data is not available.",
-      });
+      Toast.show({ type: "error", text1: "Passwords do not match!" });
       return;
     }
 
-    const { error: dbError } = await supabase.from('users').insert([
-      {
-        id: data.user.id, // Use the user id returned by Supabase Auth
-        full_name: name,
-        email: email,
-        password: password,
-      },
-    ]);
-    
-    if (dbError) {
-      Toast.show({
-        type: "error", // "success", "error", "info"
-        text1: dbError.message,
-      });
-      return;
+    try {
+      console.log('Signing up user:', { name, email });
+
+      // 🔹 Step 1: Sign up in Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({ email, password });
+
+      if (authError) {
+        Toast.show({ type: "error", text1: authError.message });
+        return;
+      }
+
+      if (!data.user) {
+        Toast.show({ type: "error", text1: "User data is not available." });
+        return;
+      }
+
+      const userId = data.user.id;
+
+      // 🔹 Step 2: Hash the password before storing it (security best practice)
+      const salt = bcrypt.genSaltSync(10);
+      const hashedPassword = bcrypt.hashSync(password, salt);
+
+      // 🔹 Step 3: Insert user details into the `users` table
+      const { error: dbError } = await supabase.from('users').insert([
+        {
+          id: userId, // Ensure the same ID from auth.users
+          full_name: name,
+          email: email,
+          password: hashedPassword, // Store hashed password
+          shop_id: null, // Can be assigned later
+        },
+      ]);
+
+      if (dbError) {
+        Toast.show({ type: "error", text1: "Database Error", text2: dbError.message });
+        return;
+      }
+
+      alert("Sign up successful!");
+      router.push('./LoginScreen');
+
+    } catch (error) {
+      console.error("Unexpected Error:", error);
+      alert( "An unexpected error occurred.");
     }
-    
-    Toast.show({
-      type: "success", // "success", "error", "info"
-      text1: "Sign up successful!",
-      text2: "Check your email for verification.",
-    });
-    router.push('./LoginScreen');
   };
 
   return (
@@ -79,7 +78,6 @@ const SignUpScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      
       <Stack.Screen options={{ headerShown: false }} />
       <Toast />
       <View style={styles.content}>
