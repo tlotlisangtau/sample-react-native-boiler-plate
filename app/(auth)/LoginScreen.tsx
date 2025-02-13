@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import {View,Text,TextInput,TouchableOpacity,KeyboardAvoidingView,Platform,Dimensions,} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '@/components/Button/CustomButton';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -13,11 +14,31 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Handle login logic here
-    console.log('Login pressed', { email, password });
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert('Please enter both email and password');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      alert(`Login Failed' ${error.message}`);
+    } else {
+      alert("Login Successful");
+      router.replace('../(tabs)/capture'); 
+
+    }
   };
+
 
   return (
     <KeyboardAvoidingView 
