@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { Colors } from '@/constants/Colors';
 
 export default StyleSheet.create({
     container: {
@@ -30,13 +31,13 @@ export default StyleSheet.create({
       width: 80,
       height: 80,
       borderRadius: 40,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: "#F5F5F5",
       justifyContent: 'center',
       alignItems: 'center',
     },
     formContainer: {
       width: '100%',
-      backgroundColor: '#1E88E5',
+      backgroundColor: Colors.light.tint,
       borderRadius: 20,
       padding: 20,
       paddingTop: 60,

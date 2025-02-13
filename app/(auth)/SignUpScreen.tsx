@@ -5,6 +5,7 @@ import {View,Text,TextInput,TouchableOpacity,KeyboardAvoidingView,Platform,Dimen
 import { Ionicons } from '@expo/vector-icons';
 import Toast from "react-native-toast-message";
 import { supabase } from '@/lib/supabase';
+import { Colors } from '@/constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -85,7 +86,7 @@ const SignUpScreen = () => {
         {/* Avatar */}
         <View style={styles.avatarContainer}>
           <View style={styles.avatar}>
-            <Ionicons name="person-add" size={40} color="#1E88E5" />
+            <Ionicons name="person-add" size={40} color={Colors.light.tint} />
           </View>
         </View>
 
