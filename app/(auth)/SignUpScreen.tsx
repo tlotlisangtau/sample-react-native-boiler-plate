@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-} from 'react-native';
+import styles from '@/styles/SignUpCss';
+import {View,Text,TextInput,TouchableOpacity,KeyboardAvoidingView,Platform,Dimensions,} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker'; // Import Picker
+import Toast from "react-native-toast-message";
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -20,19 +13,64 @@ const SignUpScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('Retail Owner'); // Default role
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (password !== confirmPassword) {
       alert('Passwords do not match!');
       return;
     }
-    console.log('Sign Up pressed', { name, email, password, role });
-    // Add sign-up logic here
+    console.log('Sign Up pressed', { name, email, password });
+    
+    // Use await inside an async function
+    const { data, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    
+    if (authError) {
+      Toast.show({
+        type: "error", // "success", "error", "info"
+        text1: authError.message,
+      });
+      return;
+    }
+    
+    // Optionally, insert additional user data into your database
+    if (!data.user) {
+      Toast.show({
+        type: "error", // "success", "error", "info"
+        text1: "User data is not available.",
+      });
+      return;
+    }
+
+    const { error: dbError } = await supabase.from('users').insert([
+      {
+        id: data.user.id, // Use the user id returned by Supabase Auth
+        full_name: name,
+        email: email,
+        password: password,
+      },
+    ]);
+    
+    if (dbError) {
+      Toast.show({
+        type: "error", // "success", "error", "info"
+        text1: dbError.message,
+      });
+      return;
+    }
+    
+    Toast.show({
+      type: "success", // "success", "error", "info"
+      text1: "Sign up successful!",
+      text2: "Check your email for verification.",
+    });
+    router.push('./LoginScreen');
   };
 
   return (
@@ -40,7 +78,9 @@ const SignUpScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      
       <Stack.Screen options={{ headerShown: false }} />
+      <Toast />
       <View style={styles.content}>
         {/* Avatar */}
         <View style={styles.avatarContainer}>
@@ -123,20 +163,6 @@ const SignUpScreen = () => {
                 />
               </TouchableOpacity>
             </View>
-
-            {/* Role Selection Dropdown */}
-            <View style={styles.inputWrapper}>
-              <Ionicons name="people-outline" size={20} color="white" style={styles.inputIcon} />
-              <Picker
-                selectedValue={role}
-                onValueChange={(itemValue) => setRole(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="white"
-              >
-                <Picker.Item label="Retail Owner" value="Retail Owner" />
-                <Picker.Item label="Shop Assistant" value="Shop Assistant" />
-              </Picker>
-            </View>
           </View>
 
           {/* Sign Up Button */}
@@ -157,117 +183,3 @@ const SignUpScreen = () => {
 };
 
 export default SignUpScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    backgroundColor: 'white',
-    borderRadius: 50,
-    marginBottom: -50,
-    zIndex: 1,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formContainer: {
-    width: '100%',
-    backgroundColor: '#1E88E5',
-    borderRadius: 20,
-    padding: 20,
-    paddingTop: 60,
-  },
-  welcomeText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitleText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  inputContainer: {
-    gap: 16,
-  },
-  picker: {
-    flex: 1,
-    color: 'white',
-    fontSize: 16,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
-    paddingBottom: 8,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    color: 'white',
-    fontSize: 16,
-    paddingVertical: 8,
-  },
-  passwordToggle: {
-    padding: 4,
-  },
-  pickerContainer: {
-    marginTop: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 10,
-  },
-  pickerLabel: {
-    color: 'white',
-    fontSize: 14,
-    marginBottom: 5,
-  },
-  signUpButton: {
-    backgroundColor: 'white',
-    borderRadius: 30,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  signUpButtonText: {
-    color: '#1E88E5',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loginRedirect: {
-    marginTop: 16,
-    alignSelf: 'center',
-  },
-  loginRedirectText: {
-    color: 'white',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-});
